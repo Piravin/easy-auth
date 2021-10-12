@@ -1,0 +1,138 @@
+import AuthenticatorConfig, { dbAdapter, SmoothExit } from ".";
+import SignUp from "./functions/signup";
+import bcrypt from "bcrypt";
+import VerifyUser from "./functions/verification";
+import LoginUser from "./functions/login";
+import jwt from "jsonwebtoken";
+import CheckAuth from "./functions/checkAuth";
+
+const BCRYPT_SALT = 10;
+const SERVER_NAME = "localhost";
+const JWT_SECRET = "dummy-jwt=secret";
+
+beforeAll(async () => {
+    await AuthenticatorConfig(
+        "mongodb://localhost:27017", SERVER_NAME, "", "", JWT_SECRET, String(BCRYPT_SALT)
+    );
+    await dbAdapter?.claerDb();
+});
+
+afterAll(async () => {
+    await SmoothExit();
+});
+
+const username = "user-1";
+const email = "user1@email.com";
+const password = "password-1";
+let code: string;
+let id: string;
+let token: string;
+
+describe('sign-up', () => {
+
+    it("should sign-up user and return verification link", async () => {
+
+        const response = await SignUp(username, email, password, true);
+        
+        const userId = await dbAdapter?.checkExists({email: email});
+        const hash = await bcrypt.hash(userId!, Number(BCRYPT_SALT));
+
+        const mockResponse = {
+            link: expect.any(String),//`${SERVER_NAME}/auth/verify?id=${userId}&code=${expect.anything()}`,
+            userId: userId,
+            code: expect.any(String)
+        };
+
+        expect(response).toEqual(mockResponse);
+        code = response.code!;
+        id = response.userId!;
+    });
+
+    it("should return user allready exists", async () => {
+        const response = await SignUp(username, email, password, true);
+        const mockResponse = {
+            status: false,
+            message: "User allready exists"
+        }
+        expect(response).toEqual(mockResponse);
+    });
+
+    it("should verify user using link mailed", async () => {
+        let response = await VerifyUser(id, code);
+        expect(response).toBe(true);
+    });
+
+    it("should update verified field for user in database", async () => {
+        let response = await dbAdapter?.getValues({email: email}, ["verified"]);
+        let mockResponse = {
+            _id: id,
+            verified: true
+        }
+        expect(response).toEqual(mockResponse);
+    });
+
+});
+
+describe("login", () => {
+    
+    type response = {
+        status: boolean,
+        data?: {token: string},
+        message: string
+    }
+    let result: response;
+
+    it("should login user successfully", async () => {
+        result = await LoginUser(email, password);
+        const mockResult = {
+            status: true,
+            data: {token: expect.any(String)},
+            message: "Login successful."
+        }
+        token = result.data!.token;
+        expect(result).toEqual(mockResult);
+    });
+
+    it("should verify jwt send in the response", async () => {
+        const resultId = await jwt.verify(result.data!.token, JWT_SECRET);
+
+        const userId = await dbAdapter?.checkExists({_id: resultId});
+        expect(userId).toEqual(id);
+    });
+
+    it("should return login failure", async () => {
+        result = await LoginUser(email, "pass");
+        const mockResult = {
+            status: false,
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
+});
+
+describe("Verify Authentication", () => {
+    
+    it("should return successful user authentication", async () => {
+        const result = await CheckAuth(token);
+        const mockResult = {
+            status: true,
+            data: {
+                userName: username,
+                userEmail: email
+            },
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
+    it("should return failed authentication", async () => {
+        const tamperedToken = await jwt.sign(id, "falk-jwt-secret");
+        const result = await CheckAuth(tamperedToken);
+        const mockResult = {
+            status: false,
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+});

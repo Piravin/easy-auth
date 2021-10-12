@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User verification email</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .verify-button {
+            text-decoration: none;
+            padding: 0;
+            margin: 20px;
+        }
+        .verify-button button {
+            background-color: rgb(224 127 48);
+            border-radius: 2px;
+            margin: 0;
+            color: white;
+            width: 200px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 1px 1px 20px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        Please verify your just_chat account by clicking the below button
+        <br/>
+        <a href="<%= link %> " class="verify-button">
+            <button>Verify Account</button>
+        </a>
+    </div>
+</body>
+</html>

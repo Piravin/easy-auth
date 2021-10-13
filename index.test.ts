@@ -5,6 +5,7 @@ import VerifyUser from "./functions/verification";
 import LoginUser from "./functions/login";
 import jwt from "jsonwebtoken";
 import CheckAuth from "./functions/checkAuth";
+import { RequestReset, ValidateReset } from "./functions/resetPassword";
 
 const BCRYPT_SALT = 10;
 const SERVER_NAME = "localhost";
@@ -24,7 +25,7 @@ afterAll(async () => {
 const username = "user-1";
 const email = "user1@email.com";
 const password = "password-1";
-let code: string;
+let code: string; // hash of userId
 let id: string;
 let token: string;
 
@@ -35,7 +36,6 @@ describe('sign-up', () => {
         const response = await SignUp(username, email, password, true);
         
         const userId = await dbAdapter?.checkExists({email: email});
-        const hash = await bcrypt.hash(userId!, Number(BCRYPT_SALT));
 
         const mockResponse = {
             link: expect.any(String),//`${SERVER_NAME}/auth/verify?id=${userId}&code=${expect.anything()}`,
@@ -135,4 +135,62 @@ describe("Verify Authentication", () => {
         };
         expect(result).toEqual(mockResult);
     });
+});
+
+describe("password-reset", () => {
+
+    let resetToken: string;
+
+    it("should return password reset token", async () => {
+        const result = await RequestReset(email, true);
+        const mockResult = {
+            status: true,
+            resetToken: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+        resetToken = result.resetToken!;
+    });
+
+    it("should check reset token", async () => {
+        const result = await jwt.verify(resetToken!, JWT_SECRET);
+        expect(result).toBe(id);
+    })
+
+    it("should return user not found", async () => {
+        const result = await RequestReset("fake-email", true);
+        const mockResult = {
+            status: false,
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
+    it("should reset password successfully", async () => {
+        const result = await ValidateReset(resetToken, "new-password");
+        const mockResult = {
+            status: true,
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
+    it("should return login unsuccessful with old password", async () => {
+        const result = await LoginUser(email, password);
+        const mockResult = {
+            status: false,
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
+    it("should successfully login with new password", async () => {
+        const result = await LoginUser(email, "new-password");
+        const mockResult = {
+            status: true,
+            data: {token: expect.any(String)},
+            message: expect.any(String)
+        };
+        expect(result).toEqual(mockResult);
+    });
+
 });

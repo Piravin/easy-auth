@@ -30,7 +30,7 @@ async function SignUp(name: string, email: string, password: string, testing: bo
         }).catch(err=>console.error(err));
 
         const mailResponse = await mailDirector.sendMail({
-            from: "piravin.virtual@gmail.com",
+            from: config?.EMAIL_ID!,
             to: email,
             subject: "Account verification",
             text: "",

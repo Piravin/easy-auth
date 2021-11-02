@@ -1,7 +1,7 @@
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import {config, dbAdapter} from "../index";
 
-async function CheckAuth(token: string) {
+async function CheckAuth(token: string, privilege: number = 0) {
 
     /**
      * This function is used to verify JWT
@@ -12,9 +12,12 @@ async function CheckAuth(token: string) {
         // jwt throws an error if the token is not genuine
         const result = await jwt.verify(token, config!.JWT_SECRET!);
 
-        const userInfo = await dbAdapter?.getValues({_id: result},["name", "email"]);
+        let info: JwtPayload = typeof(result) == "string" ? {} : result;
+        
+        const userInfo = await dbAdapter?.getValues({_id: info.userId},["name", "email", "privilege"]);
                
         if (userInfo === null) throw new Error("User not found");
+        if (Number(userInfo.privilege) < privilege) throw new Error("Unauthorized user");
 
         return {
             status: true,
@@ -27,10 +30,9 @@ async function CheckAuth(token: string) {
 
     } catch (err) {
 
-        console.log(err);
         return {
             status: false,
-            message: "User not verified"
+            message: err
         }
 
     }

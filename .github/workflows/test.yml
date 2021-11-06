@@ -3,6 +3,13 @@ on: [push]
 jobs:
   runs-unit-test:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME:
+          MONGO_INITDB_ROOT_PASSWORD:
+          MONGO_INITDB_DATABASE: accounts
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2

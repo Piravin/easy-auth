@@ -1,9 +1,11 @@
 {
-  "name": "accounts",
+  "name": "easy-auth",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "This project is aimed at easing out the process of setting up authentication when building a new node.js application.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "author": "Piravin K C M",

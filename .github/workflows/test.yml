@@ -1,0 +1,25 @@
+name: unit-test
+on: [push]
+jobs:
+  runs-unit-test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME:
+          MONGO_INITDB_ROOT_PASSWORD:
+          MONGO_INITDB_DATABASE: accounts
+        ports:
+          - 27017:27017
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+      - name: Setup node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install node dependencies
+        run: npm install
+      - name: Runs unit test
+        run: npm run test

@@ -3,9 +3,10 @@ import SignUp from "./functions/signup";
 import bcrypt from "bcrypt";
 import VerifyUser from "./functions/verification";
 import LoginUser from "./functions/login";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import CheckAuth from "./functions/checkAuth";
 import { RequestReset, ValidateReset } from "./functions/resetPassword";
+import ElevateUser from "./functions/elevateUser";
 
 const BCRYPT_SALT = 10;
 const SERVER_NAME = "localhost";
@@ -93,10 +94,11 @@ describe("login", () => {
         expect(result).toEqual(mockResult);
     });
 
-    it("should verify jwt send in the response", async () => {
-        const resultId = await jwt.verify(result.data!.token, JWT_SECRET);
+    it("should verify jwt sent in the response", async () => {
+        const response = await jwt.verify(token, JWT_SECRET);
+        let resultData: JwtPayload = typeof(response) == "string" ? {} : response;
 
-        const userId = await dbAdapter?.checkExists({_id: resultId});
+        const userId = await dbAdapter?.checkExists({_id: resultData.userId});
         expect(userId).toEqual(id);
     });
 
@@ -126,12 +128,39 @@ describe("Verify Authentication", () => {
         expect(result).toEqual(mockResult);
     });
 
+    it("should return unauthorized", async () => {
+        const response = await CheckAuth(token, 2);
+        const mockResult = {
+            status: false,
+            message: expect.anything()
+        };
+        expect(response).toEqual(mockResult);
+    });
+
+    it("should elevate user", async () => {
+        const response = await ElevateUser(email, 2);
+        const mockResult = {
+            status: true
+        };
+        expect(response).toEqual(mockResult);
+    });
+
+    it("should return authorized", async () => {
+        const response = await CheckAuth(token, 2);
+        const mockResult = {
+            status: true,
+            data: expect.anything(),
+            message: expect.anything()
+        };
+        expect(response).toEqual(mockResult);
+    });
+
     it("should return failed authentication", async () => {
         const tamperedToken = await jwt.sign(id, "falk-jwt-secret");
         const result = await CheckAuth(tamperedToken);
         const mockResult = {
             status: false,
-            message: expect.any(String)
+            message: expect.anything()
         };
         expect(result).toEqual(mockResult);
     });

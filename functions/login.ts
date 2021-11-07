@@ -9,7 +9,7 @@ async function LoginUser(email: string, password: string) {
      * and set JWT for further authorization
      */
 
-    const user = await dbAdapter?.getValues({ email: email }, ["password", "verified"]);
+    const user = await dbAdapter?.getValues({ email: email }, ["password", "verified", "privilege"]);
     
     // Check whether user exists and is verified
     if (user !== null && user.verified) {
@@ -20,7 +20,11 @@ async function LoginUser(email: string, password: string) {
         // Set the JWT token as a cookie if authenticated
         if (authenticated) {
 
-            const token = await jwt.sign(user._id, config!.JWT_SECRET!);
+            const tokenInfo = {
+                userId: user._id,
+                privilege: user.privilege
+            };
+            const token = await jwt.sign(tokenInfo, config!.JWT_SECRET!);
 
             return {
                 status: true,

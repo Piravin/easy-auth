@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { config, dbAdapter } from "../index";
 import Emailer from "../utils/utils";
 
-async function SignUp(name: string, email: string, password: string, testing: boolean = false) {
+async function SignUp(name: string, email: string, password: string, testing: boolean = false, privilege: number = 0) {
 
     // Check if user allready exists
     const exists = await dbAdapter?.checkExists({email: email});
@@ -15,7 +15,7 @@ async function SignUp(name: string, email: string, password: string, testing: bo
 
     // Create record/document for the user and mark as unverified
     let hash = await bcrypt.hash(password, Number(config!.BCRYPT_SALT));
-    const userId = await dbAdapter?.insert({name: name, email: email, password: hash, verified: false});
+    const userId = await dbAdapter?.insert({name: name, email: email, password: hash, verified: false, privilege: privilege});
     hash = await bcrypt.hash(userId, Number(config!.BCRYPT_SALT));
 
     if (!testing) {
